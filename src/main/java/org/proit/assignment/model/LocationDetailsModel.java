@@ -1,17 +1,13 @@
 package org.proit.assignment.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import java.util.List;
-
-@Data
-public class Locations {
-    private List<Result> results;
-    private double generationtime_ms;
-}
+import lombok.NoArgsConstructor;
 
 @Data
-class Result {
+@AllArgsConstructor
+@NoArgsConstructor
+public class LocationDetailsModel {
     private int id;
     private String name;
     private double latitude;
@@ -32,4 +28,3 @@ class Result {
     private String admin3;
     private String admin4;
 }
-

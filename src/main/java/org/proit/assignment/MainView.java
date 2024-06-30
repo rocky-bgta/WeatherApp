@@ -7,43 +7,57 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
-import com.vaadin.flow.router.Route;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.router.Route;
+import org.proit.assignment.model.LocationDetailsModel;
+import org.proit.assignment.model.WeatherApiResponseModel;
+import org.proit.assignment.service.LocationService;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Component
 @Route("")
 public class MainView extends VerticalLayout {
 
-    private Grid<Person> grid;
-    private List<Person> allPersons;
-    private List<Person> filteredPersons;
+    private Grid<LocationDetailsModel> grid;
+    private List<LocationDetailsModel> allLocationDetails;
+    private List<LocationDetailsModel> filteredLocationDetails;
     private int currentPage = 0;
-    private final int pageSize = 10;
+    private final int pageSize = 5;
     private TextField filterTextField;
+    
+    private final LocationService locationService;
 
-    public MainView() {
+    public MainView(LocationService locationService) {
         // Initialize the list of all persons
-        allPersons = new ArrayList<>();
-        for (int i = 1; i <= 50; i++) {
-            allPersons.add(new Person("Firstname" + i, "Lastname" + i, "Address" + i));
-        }
+        allLocationDetails = new ArrayList<>();
+//        for (int i = 1; i <= 50; i++) {
+//            allPersons.add(new Person("Firstname" + i, "Lastname" + i, "Address" + i));
+//        }
 
         // Initialize filteredPersons with allPersons initially
-        filteredPersons = new ArrayList<>(allPersons);
+        //filteredPersons = new ArrayList<>(allPersons);
+
+
+       WeatherApiResponseModel weatherApiResponseModel = locationService.getLocationsByCityName("Dhaka");
+       allLocationDetails = new ArrayList<>(weatherApiResponseModel.getResults());
+       filteredLocationDetails = new ArrayList<>(weatherApiResponseModel.getResults());
+
+
 
         // Create a Grid instance
-        grid = new Grid<>(Person.class);
-        grid.setColumns("firstname", "lastname", "address");
+        grid = new Grid<>(LocationDetailsModel.class);
+        grid.setColumns("name");
 
         // Add a column with a button
-        grid.addColumn(new ComponentRenderer<>(person -> {
+        grid.addColumn(new ComponentRenderer<>(filteredLocationDetails -> {
             Button button = new Button("Action", e -> {
                 // Handle button click
                 Div message = new Div();
-                message.setText("Button clicked for: " + person.getFirstname() + " " + person.getLastname());
+                message.setText("Button clicked for: " + filteredLocationDetails.getName());
                 add(message);
             });
             return button;
@@ -51,7 +65,7 @@ public class MainView extends VerticalLayout {
 
         // Create a text field for filtering
         filterTextField = new TextField();
-        filterTextField.setPlaceholder("Filter by Firstname");
+        filterTextField.setPlaceholder("Filter by Location Name");
         filterTextField.setValueChangeMode(ValueChangeMode.LAZY);
         filterTextField.addValueChangeListener(e -> filterGrid());
 
@@ -65,6 +79,7 @@ public class MainView extends VerticalLayout {
 
         // Display the first page
         updateGrid();
+        this.locationService = locationService;
     }
 
     private void showPreviousPage() {
@@ -75,7 +90,7 @@ public class MainView extends VerticalLayout {
     }
 
     private void showNextPage() {
-        if ((currentPage + 1) * pageSize < filteredPersons.size()) {
+        if ((currentPage + 1) * pageSize < filteredLocationDetails.size()) {
             currentPage++;
             updateGrid();
         }
@@ -83,53 +98,16 @@ public class MainView extends VerticalLayout {
 
     private void updateGrid() {
         int start = currentPage * pageSize;
-        int end = Math.min(start + pageSize, filteredPersons.size());
-        grid.setItems(filteredPersons.subList(start, end));
+        int end = Math.min(start + pageSize, filteredLocationDetails.size());
+        grid.setItems(filteredLocationDetails.subList(start, end));
     }
 
     private void filterGrid() {
         String filter = filterTextField.getValue().trim().toLowerCase();
-        filteredPersons = allPersons.stream()
-                .filter(person -> person.getFirstname().toLowerCase().contains(filter))
+        filteredLocationDetails = allLocationDetails.stream()
+                .filter(location -> location.getName().toLowerCase().contains(filter))
                 .collect(Collectors.toList());
         currentPage = 0; // Reset to the first page
         updateGrid();
-    }
-
-    // Person class to represent each row
-    public static class Person {
-        private String firstname;
-        private String lastname;
-        private String address;
-
-        public Person(String firstname, String lastname, String address) {
-            this.firstname = firstname;
-            this.lastname = lastname;
-            this.address = address;
-        }
-
-        public String getFirstname() {
-            return firstname;
-        }
-
-        public void setFirstname(String firstname) {
-            this.firstname = firstname;
-        }
-
-        public String getLastname() {
-            return lastname;
-        }
-
-        public void setLastname(String lastname) {
-            this.lastname = lastname;
-        }
-
-        public String getAddress() {
-            return address;
-        }
-
-        public void setAddress(String address) {
-            this.address = address;
-        }
     }
 }
