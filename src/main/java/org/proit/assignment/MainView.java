@@ -28,7 +28,7 @@ public class MainView extends VerticalLayout {
     private int currentPage = 0;
     private final int pageSize = 5;
     private TextField filterTextField;
-    
+
     private final LocationService locationService;
 
     public MainView(LocationService locationService) {
@@ -42,15 +42,12 @@ public class MainView extends VerticalLayout {
         //filteredPersons = new ArrayList<>(allPersons);
 
 
-       WeatherApiResponseModel weatherApiResponseModel = locationService.getLocationsByCityName("Dhaka");
-       allLocationDetails = new ArrayList<>(weatherApiResponseModel.getResults());
-       filteredLocationDetails = new ArrayList<>(weatherApiResponseModel.getResults());
-
+        getLocationInfo(locationService, "");
 
 
         // Create a Grid instance
         grid = new Grid<>(LocationDetailsModel.class);
-        grid.setColumns("name");
+        grid.setColumns("name", "country", "country_code", "timezone");
 
         // Add a column with a button
         grid.addColumn(new ComponentRenderer<>(filteredLocationDetails -> {
@@ -67,7 +64,7 @@ public class MainView extends VerticalLayout {
         filterTextField = new TextField();
         filterTextField.setPlaceholder("Filter by Location Name");
         filterTextField.setValueChangeMode(ValueChangeMode.LAZY);
-        filterTextField.addValueChangeListener(e -> filterGrid());
+        filterTextField.addValueChangeListener(e -> filterGrid(locationService));
 
         // Add pagination buttons
         Button previousButton = new Button("Previous", e -> showPreviousPage());
@@ -80,6 +77,21 @@ public class MainView extends VerticalLayout {
         // Display the first page
         updateGrid();
         this.locationService = locationService;
+    }
+
+    private void getLocationInfo(LocationService locationService, String cityName) {
+        WeatherApiResponseModel weatherApiResponseModel;
+        if (cityName != null && !cityName.isEmpty()) {
+            weatherApiResponseModel = locationService.getLocationsByCityName(cityName);
+        } else {
+            weatherApiResponseModel = locationService.getLocationsByCityName("Dhaka");
+        }
+        //allLocationDetails = new ArrayList<>();
+        // filteredLocationDetails = new ArrayList<>();
+
+
+        allLocationDetails = weatherApiResponseModel.getResults();
+        filteredLocationDetails = weatherApiResponseModel.getResults();
     }
 
     private void showPreviousPage() {
@@ -102,12 +114,16 @@ public class MainView extends VerticalLayout {
         grid.setItems(filteredLocationDetails.subList(start, end));
     }
 
-    private void filterGrid() {
+    private void filterGrid(LocationService locationService) {
         String filter = filterTextField.getValue().trim().toLowerCase();
-        filteredLocationDetails = allLocationDetails.stream()
-                .filter(location -> location.getName().toLowerCase().contains(filter))
-                .collect(Collectors.toList());
-        currentPage = 0; // Reset to the first page
-        updateGrid();
+        getLocationInfo(locationService,filter);
+
+        if(filteredLocationDetails!=null && !filteredLocationDetails.isEmpty()) {
+            filteredLocationDetails = allLocationDetails.stream()
+                    .filter(location -> location.getName().toLowerCase().contains(filter))
+                    .collect(Collectors.toList());
+            currentPage = 0; // Reset to the first page
+            updateGrid();
+        }
     }
 }
